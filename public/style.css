@@ -1,0 +1,112 @@
+/* عام */
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    direction: rtl;
+    background-color: #f3f4f6;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .container {
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+    text-align: center;
+  }
+  
+  h1 {
+    font-size: 28px;
+    margin-bottom: 5px;
+    color: #1f2937;
+  }
+  
+  h2 {
+    font-size: 20px;
+    margin: 10px 0;
+    color: #374151;
+  }
+  
+  /* بطاقات */
+  .card {
+    border: 2px solid #d1d5db;
+    background-color: white;
+    border-radius: 12px;
+    padding: 15px;
+    margin: 10px auto;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+  }
+  
+  .card:hover {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  }
+  
+  /* بطاقة اللاعب نفسه */
+  .my-card {
+    border-color: #10b981;
+    background-color: #ecfdf5;
+  }
+  
+  /* الحقول والأزرار */
+  input[type="text"],
+  input[type="number"] {
+    padding: 8px;
+    margin-top: 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    width: 80%;
+    text-align: center;
+  }
+  
+  button {
+    padding: 8px 16px;
+    margin: 5px;
+    border: none;
+    background-color: #3b82f6;
+    color: white;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  
+  button:hover {
+    background-color: #2563eb;
+  }
+  
+  button:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
+  
+  /* شبكة البطاقات */
+  #others {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+    margin-top: 20px;
+  }
+  
+  /* إشعارات داخلية */
+  .alert {
+    color: red;
+    margin-top: 10px;
+    font-weight: bold;
+  }
+  .title-big {
+    font-size: 48px;
+    color: #ffbb00;
+    font-family: 'Amiri', serif;
+    text-shadow: 2px 2px 3px #000;
+  }
+  
+  .title-small {
+    font-size: 32px;
+    color: #ffbb00;
+    font-family: 'Amiri', serif;
+    text-shadow: 2px 2px 3px #000;
+  }
+    

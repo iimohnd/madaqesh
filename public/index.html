@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>مداقش</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <h1 class="title-big">مداقش</h1>
+
+    <div id="create-section">
+      <h2>إنشاء غرفة</h2>
+      <input type="text" id="create-name" placeholder="اسم اللاعب">
+      <button onclick="createRoom()">إنشاء</button>
+    </div>
+
+    <hr>
+
+    <div id="join-section">
+      <h2>دخول غرفة</h2>
+      <input type="text" id="join-name" placeholder="اسم اللاعب">
+      <input type="text" id="join-code" placeholder="كود الغرفة">
+      <button onclick="joinRoom()">دخول</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    function createRoom() {
+      const name = document.getElementById('create-name').value.trim();
+      if (!name) return alert("⚠️ الرجاء إدخال اسمك.");
+
+      socket.emit("createRoom", name, (roomCode) => {
+        sessionStorage.setItem("name", name);
+        sessionStorage.setItem("roomCode", roomCode);
+        sessionStorage.setItem("isOwner", "true");
+        location.href = "room.html";
+      });
+    }
+
+    function joinRoom() {
+      const name = document.getElementById('join-name').value.trim();
+      const code = document.getElementById('join-code').value.trim();
+
+      if (!name || !code) return alert("⚠️ الرجاء إدخال جميع الحقول.");
+
+      socket.emit("joinRoom", { username: name, roomCode: code }, (res) => {
+        if (res.error === "Room not found") {
+          return alert("❌ الكود غير صحيح، تأكد من إدخاله بشكل صحيح.");
+        }
+        if (res.error === "Duplicate name") {
+          return alert("❌ هذا الاسم مستخدم بالفعل داخل الغرفة.");
+        }
+        sessionStorage.setItem("name", name);
+        sessionStorage.setItem("roomCode", code);
+        sessionStorage.setItem("isOwner", "false");
+        location.href = "room.html";
+      });
+    }
+  </script>
+</body>
+</html>
