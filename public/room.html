@@ -8,14 +8,10 @@
 </head>
 <body>
   <div class="container">
-    <!-- العنوان -->
     <h1 class="title-small">مداقش</h1>
     <h2 id="room-info"></h2>
 
-    <!-- بطاقة اللاعب نفسه -->
     <div id="player-card" class="card my-card"></div>
-
-    <!-- باقي اللاعبين -->
     <div id="others"></div>
   </div>
 
@@ -35,12 +31,15 @@
     // عرض معلومات المستخدم ورمز الغرفة
     roomInfo.innerText = `رمز الغرفة: ${roomCode} — أنت: ${name} ${isOwner ? "(مشرف)" : ""}`;
 
-    socket.emit("joinRoom", { username: name, roomCode }, (res) => {
-      if (res?.error) {
-        alert("حدث خطأ في الدخول للغرفة.");
-        location.href = "index.html";
-      }
-    });
+    // فقط اللاعبين العاديين يرسلون joinRoom
+    if (!isOwner) {
+      socket.emit("joinRoom", { username: name, roomCode }, (res) => {
+        if (res?.error) {
+          alert("حدث خطأ في الدخول للغرفة.");
+          location.href = "index.html";
+        }
+      });
+    }
 
     socket.on("updatePlayers", (players) => {
       myCard.innerHTML = "";
@@ -52,7 +51,6 @@
         div.innerHTML = `<strong>${player.name}</strong><br>💰 ${player.balance.toLocaleString()} ريال`;
 
         if (player.name === name) {
-          // بطاقة المستخدم نفسه
           const input = document.createElement("input");
           input.type = "number";
           input.placeholder = "المبلغ";
