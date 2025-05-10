@@ -23,6 +23,12 @@
     const name = sessionStorage.getItem("name");
     const roomCode = sessionStorage.getItem("roomCode");
 
+    let mySocketId = "";
+
+    socket.on("connect", () => {
+      mySocketId = socket.id;
+    });
+
     const roomInfo = document.getElementById("room-info");
     const myCard = document.getElementById("player-card");
     const others = document.getElementById("others");
@@ -49,7 +55,7 @@
     socket.on("updatePlayers", (data) => {
       const players = data.players;
       const ownerId = data.ownerId;
-      const isOwner = socket.id === ownerId;
+      const isOwner = mySocketId === ownerId;
 
       myCard.innerHTML = "";
       others.innerHTML = "";
@@ -87,8 +93,7 @@
         div.className = "card";
         div.innerHTML = `<strong>${player.name}</strong><br>💰 ${player.balance.toLocaleString()} ريال`;
 
-        // ✅ إذا هذا اللاعب هو المستخدم الحالي (بالـ socket.id)
-        if (player.id === socket.id) {
+        if (player.id === mySocketId) {
           const input = document.createElement("input");
           input.type = "number";
           input.placeholder = "المبلغ";
