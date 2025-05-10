@@ -39,8 +39,8 @@ async function joinRoom(roomCode, username) {
   if (!room) return null;
 
   // إذا الاسم موجود فعلاً، نسمح له يرجع بدون تكرار
-  const nameExists = room.players.some((p) => p.name === username);
-  if (nameExists) return { error: "Duplicate name" };
+  // const nameExists = room.players.some((p) => p.name === username);
+  // if (nameExists) return { error: "Duplicate name" };
 
   room.players.push({
     id: username,

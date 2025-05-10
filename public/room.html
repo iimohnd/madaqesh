@@ -87,8 +87,9 @@
         const div = document.createElement("div");
         div.className = "card";
         div.innerHTML = `<strong>${player.name}</strong><br>💰 ${player.balance.toLocaleString()} ريال`;
-
-        if (player.name === name) {
+        console.log("👤 من localStorage:", name);
+        console.log("🧑‍🤝‍🧑 من السيرفر:", player.name);
+        if (player.name.trim().toLowerCase() === name.trim().toLowerCase()) {
           const input = document.createElement("input");
           input.type = "number";
           input.placeholder = "المبلغ";
