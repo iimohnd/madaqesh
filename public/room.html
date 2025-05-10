@@ -27,7 +27,7 @@
     const socket = io();
     const name = sessionStorage.getItem("name");
     const roomCode = sessionStorage.getItem("roomCode");
-    const isOwner = sessionStorage.getItem("isOwner") === "true";
+    let isOwner = sessionStorage.getItem("isOwner") === "true";
 
     const roomInfo = document.getElementById("room-info");
     const myCard = document.getElementById("player-card");
@@ -49,43 +49,52 @@
       });
     }
 
-    if (isOwner) {
-      const adminDiv = document.getElementById("admin-controls");
-
-      const deleteBtn = document.createElement("button");
-      deleteBtn.textContent = "🚩 حذف الغرفة";
-      deleteBtn.style.backgroundColor = "#dc2626";
-      deleteBtn.onclick = () => {
-        const sure = confirm("هل تريد حذف الغرفة نهائيًا؟");
-        if (sure) {
-          socket.emit("deleteRoom", roomCode);
-          alert("✅ تم حذف الغرفة.");
-          location.href = "index.html";
-        }
-      };
-      adminDiv.appendChild(deleteBtn);
-
-      // باركود للمشرف فقط
-      const qrDiv = document.createElement("div");
-      qrDiv.style.position = "fixed";
-      qrDiv.style.bottom = "10px";
-      qrDiv.style.left = "10px";
-      qrDiv.innerHTML = `
-        <img src="img/frame.png" alt="QR Code" style="width: 110px;">
-      `;
-      document.body.appendChild(qrDiv);
-    }
-
     socket.on("updatePlayers", (players) => {
       myCard.innerHTML = "";
       others.innerHTML = "";
 
+      // 🔄 تحقق من إذا هذا المستخدم هو المشرف فعلاً (أول لاعب بالغرفة)
+      const me = players.find(p => p.name === name);
+      if (me && me.id === players[0].id) {
+        isOwner = true;
+        sessionStorage.setItem("isOwner", "true");
+        roomInfo.innerText = `رمز الغرفة: ${roomCode} — أنت: ${name} (مشرف)`;
+      }
+
+      // ✅ إذا مشرف، أظهر زر حذف الغرفة + الباركود (مرة وحدة فقط)
+      if (isOwner && !document.getElementById("deleteRoomBtn")) {
+        const adminDiv = document.getElementById("admin-controls");
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.id = "deleteRoomBtn";
+        deleteBtn.textContent = "🚩 حذف الغرفة";
+        deleteBtn.style.backgroundColor = "#dc2626";
+        deleteBtn.onclick = () => {
+          const sure = confirm("هل تريد حذف الغرفة نهائيًا؟");
+          if (sure) {
+            socket.emit("deleteRoom", roomCode);
+            alert("✅ تم حذف الغرفة.");
+            location.href = "index.html";
+          }
+        };
+        adminDiv.appendChild(deleteBtn);
+
+        const qrDiv = document.createElement("div");
+        qrDiv.style.position = "fixed";
+        qrDiv.style.bottom = "10px";
+        qrDiv.style.left = "10px";
+        qrDiv.innerHTML = `
+          <img src="img/frame.png" alt="QR Code" style="width: 110px;">
+        `;
+        document.body.appendChild(qrDiv);
+      }
+
+      // ✅ عرض البطاقات
       players.forEach(player => {
         const div = document.createElement("div");
         div.className = "card";
         div.innerHTML = `<strong>${player.name}</strong><br>💰 ${player.balance.toLocaleString()} ريال`;
 
-        // ✅ اللاعب الحالي (مشرف أو عادي)
         if (player.name === name) {
           const input = document.createElement("input");
           input.type = "number";
@@ -143,7 +152,6 @@
           div.appendChild(btn);
           myCard.appendChild(div);
         } else {
-          // ✅ باقي اللاعبين + صلاحيات المشرف فقط
           if (isOwner) {
             const input = document.createElement("input");
             input.type = "number";
