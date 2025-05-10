@@ -19,7 +19,6 @@ app.use(express.static(path.join(__dirname, "public")));
 io.on("connection", (socket) => {
   console.log("🔌 اتصال جديد:", socket.id);
 
-  // ننتظر تحديد الجهاز
   socket.on("identify", ({ deviceId }) => {
     socket.deviceId = deviceId;
     console.log("🎯 هذا الجهاز:", deviceId);
@@ -50,6 +49,16 @@ io.on("connection", (socket) => {
 
     if (room.error === "Duplicate name") {
       console.log("⚠️ دخول مكرر للاسم:", username);
+
+      socket.join(roomCode);
+      socket.roomCode = roomCode;
+      socket.username = username;
+
+      io.to(roomCode).emit("updatePlayers", {
+        players: room.players,
+        ownerName: room.ownerName,
+      });
+
       return callback({ success: true });
     }
 
@@ -72,7 +81,7 @@ io.on("connection", (socket) => {
     const player = room.players.find((p) => p.name === socket.username);
     if (player) {
       player.balance += amount;
-      await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 4 });
+      await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 12 });
 
       io.to(roomCode).emit("updatePlayers", {
         players: room.players,
@@ -90,7 +99,7 @@ io.on("connection", (socket) => {
     const player = room.players.find((p) => p.name === playerName);
     if (player) {
       player.balance = newBalance;
-      await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 4 });
+      await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 12 });
 
       io.to(roomCode).emit("updatePlayers", {
         players: room.players,
@@ -106,7 +115,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", async () => {
     console.log("❌ تم فصل:", socket.id);
-    await removeRoomIfEmpty(socket.id); // أو deviceId إذا حبيت تدعمه
+    await removeRoomIfEmpty(socket.id); // لو تريد تستبدله بـ deviceId خبرني
   });
 });
 
