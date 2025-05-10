@@ -1,14 +1,18 @@
-// rooms.js
+// rooms.js (Redis version)
 
-const rooms = {};
+const { Redis } = require('@upstash/redis');
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
 
 function generateRoomCode() {
   return Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
 }
 
-function createRoom(username, socketId) {
+async function createRoom(username, socketId) {
   const roomCode = generateRoomCode();
-  rooms[roomCode] = {
+  const roomData = {
     ownerId: socketId,
     players: [
       {
@@ -19,29 +23,45 @@ function createRoom(username, socketId) {
     ],
     createdAt: Date.now(),
   };
-  return { roomCode, roomData: rooms[roomCode] };
+  await redis.set(roomCode, roomData);
+  return { roomCode, roomData };
 }
 
-function joinRoom(roomCode, username, socketId) {
-  const room = rooms[roomCode];
+async function joinRoom(roomCode, username, socketId) {
+  const room = await redis.get(roomCode);
   if (!room) return null;
+
+  // منع تكرار الاسم
+  const nameExists = room.players.some((p) => p.name === username);
+  if (nameExists) return { error: "Duplicate name" };
+
   room.players.push({
     id: socketId,
     name: username,
     balance: 10000,
   });
+
+  await redis.set(roomCode, room);
   return room;
 }
 
-function getRoom(roomCode) {
-  return rooms[roomCode];
+async function getRoom(roomCode) {
+  return await redis.get(roomCode);
 }
 
-function removeRoomIfEmpty(socketId) {
-  for (const [roomCode, room] of Object.entries(rooms)) {
+async function removeRoomIfEmpty(socketId) {
+  const keys = await redis.keys("*");
+
+  for (const key of keys) {
+    const room = await redis.get(key);
+    if (!room) continue;
+
     room.players = room.players.filter((p) => p.id !== socketId);
+
     if (room.players.length === 0) {
-      delete rooms[roomCode];
+      await redis.del(key);
+    } else {
+      await redis.set(key, room);
     }
   }
 }
