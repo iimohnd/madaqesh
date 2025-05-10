@@ -61,22 +61,24 @@ async function getRoom(roomCode) {
 }
 
 async function removeRoomIfEmpty(socketId) {
-  const keys = await redis.keys("*");
-
-  for (const key of keys) {
-    const raw = await redis.get(key);
-    const room = typeof raw === "string" ? JSON.parse(raw) : raw;
-    if (!room) continue;
-
-    room.players = room.players.filter((p) => p.id !== socketId);
-
-    if (room.players.length === 0) {
-      await redis.del(key);
-    } else {
+    const keys = await redis.keys("*");
+  
+    for (const key of keys) {
+      const raw = await redis.get(key);
+      const room = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (!room) continue;
+  
+      const originalCount = room.players.length;
+  
+      room.players = room.players.filter((p) => p.id !== socketId);
+  
+      // ✅ لا تحذف الغرفة مباشرة، فقط حدث القائمة
       await redis.set(key, JSON.stringify(room), { ex: 60 * 60 * 12 });
+  
+      // ❌ لا تحذف الغرفة حتى لو صارت فاضية – لأن المشرف ممكن يرجع خلال لحظات
     }
   }
-}
+  
 
 module.exports = {
   createRoom,
