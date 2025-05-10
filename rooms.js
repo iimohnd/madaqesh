@@ -25,7 +25,7 @@ async function createRoom(username, socketId) {
     createdAt: Date.now(),
   };
 
-  await redis.set(roomCode, JSON.stringify(roomData), { ex: 60 * 60 * 12 });
+  await redis.set(roomCode, JSON.stringify(roomData), { ex: 60 * 60 * 6 });
   console.log("✅ Created Room Code:", roomCode);
 
   return { roomCode, roomData };
