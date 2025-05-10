@@ -26,13 +26,21 @@ async function createRoom(username, socketId) {
 
   // نحفظ كـ JSON string
   await redis.set(roomCode, JSON.stringify(roomData), { ex: 60 * 60 * 12 });
+  console.log("✅ Created Room Code:", roomCode);
+
   return { roomCode, roomData };
 }
 
 async function joinRoom(roomCode, username, socketId) {
-  const raw = await redis.get(roomCode);
-  const room = typeof raw === "string" ? JSON.parse(raw) : raw;
-  if (!room) return null;
+    console.log("🟨 Trying to join room:", roomCode);
+  
+    const raw = await redis.get(roomCode);
+    const room = typeof raw === "string" ? JSON.parse(raw) : raw;
+  
+    console.log("🔎 Room found:", room);
+  
+    if (!room) return null;
+  
 
   const nameExists = room.players.some((p) => p.name === username);
   if (nameExists) return { error: "Duplicate name" };
