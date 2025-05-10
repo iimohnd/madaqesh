@@ -35,10 +35,8 @@
 
     let canSend = true;
 
-    // عرض معلومات المستخدم ورمز الغرفة
     roomInfo.innerText = `رمز الغرفة: ${roomCode} — أنت: ${name} ${isOwner ? "(مشرف)" : ""}`;
 
-    // فقط غير المشرفين ينفذون joinRoom
     if (!isOwner) {
       socket.emit("joinRoom", { username: name, roomCode }, (res) => {
         if (res?.error === "Room not found") {
@@ -51,9 +49,17 @@
       });
     }
 
-    // زر حذف الغرفة (للمشرف فقط)
     if (isOwner) {
       const adminDiv = document.getElementById("admin-controls");
+      const qrDiv = document.createElement("div");
+      qrDiv.style.position = "fixed";
+      qrDiv.style.bottom = "10px";
+      qrDiv.style.left = "10px";
+      qrDiv.innerHTML = `
+        <img src="img/frame.png" alt="QR Code" style="width: 110px;">
+      `;
+      document.body.appendChild(qrDiv);
+
       const deleteBtn = document.createElement("button");
       deleteBtn.textContent = "🚩 حذف الغرفة";
       deleteBtn.style.backgroundColor = "#dc2626";
@@ -68,7 +74,6 @@
       adminDiv.appendChild(deleteBtn);
     }
 
-    // تحديث واجهة اللاعبين
     socket.on("updatePlayers", (players) => {
       myCard.innerHTML = "";
       others.innerHTML = "";
@@ -79,6 +84,7 @@
         div.innerHTML = `<strong>${player.name}</strong><br>💰 ${player.balance.toLocaleString()} ريال`;
 
         if (player.name === name) {
+          // ✅ اللاعب الحالي (سواء مشرف أو عادي) يظهر له أدوات اللعب
           const input = document.createElement("input");
           input.type = "number";
           input.placeholder = "المبلغ";
@@ -135,6 +141,7 @@
           div.appendChild(btn);
           myCard.appendChild(div);
         } else {
+          // ✅ باقي اللاعبين
           if (isOwner) {
             const input = document.createElement("input");
             input.type = "number";

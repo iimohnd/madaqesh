@@ -120,4 +120,12 @@ body {
     text-align: center;
     box-sizing: border-box;
   }
+  body {
+    background-image: url('img/bg-omani-money.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-color: #f7f7f7;
+  }
   
