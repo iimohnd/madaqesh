@@ -23,12 +23,14 @@ async function createRoom(username, socketId) {
     createdAt: Date.now(),
   };
 
-  await redis.set(roomCode, roomData, { ex: 60 * 60 * 12 });
+  // نحفظ كـ JSON string
+  await redis.set(roomCode, JSON.stringify(roomData), { ex: 60 * 60 * 12 });
   return { roomCode, roomData };
 }
 
 async function joinRoom(roomCode, username, socketId) {
-  const room = await redis.get(roomCode);
+  const raw = await redis.get(roomCode);
+  const room = typeof raw === "string" ? JSON.parse(raw) : raw;
   if (!room) return null;
 
   const nameExists = room.players.some((p) => p.name === username);
@@ -40,21 +42,21 @@ async function joinRoom(roomCode, username, socketId) {
     balance: 10000,
   });
 
-  // مهم: إعادة حفظ الغرفة وتحديث مدة التخزين
-  await redis.set(roomCode, room, { ex: 60 * 60 * 12 });
-
-  return room; // 💥 هذا السطر أساسي لتأكيد أن الرد يرجع للعميل
+  await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 12 });
+  return room;
 }
 
 async function getRoom(roomCode) {
-  return await redis.get(roomCode);
+  const raw = await redis.get(roomCode);
+  return typeof raw === "string" ? JSON.parse(raw) : raw;
 }
 
 async function removeRoomIfEmpty(socketId) {
   const keys = await redis.keys("*");
 
   for (const key of keys) {
-    const room = await redis.get(key);
+    const raw = await redis.get(key);
+    const room = typeof raw === "string" ? JSON.parse(raw) : raw;
     if (!room) continue;
 
     room.players = room.players.filter((p) => p.id !== socketId);
@@ -62,7 +64,7 @@ async function removeRoomIfEmpty(socketId) {
     if (room.players.length === 0) {
       await redis.del(key);
     } else {
-      await redis.set(key, room, { ex: 60 * 60 * 12 });
+      await redis.set(key, JSON.stringify(room), { ex: 60 * 60 * 12 });
     }
   }
 }
