@@ -51,14 +51,6 @@
 
     if (isOwner) {
       const adminDiv = document.getElementById("admin-controls");
-      const qrDiv = document.createElement("div");
-      qrDiv.style.position = "fixed";
-      qrDiv.style.bottom = "10px";
-      qrDiv.style.left = "10px";
-      qrDiv.innerHTML = `
-        <img src="img/frame.png" alt="QR Code" style="width: 110px;">
-      `;
-      document.body.appendChild(qrDiv);
 
       const deleteBtn = document.createElement("button");
       deleteBtn.textContent = "🚩 حذف الغرفة";
@@ -72,6 +64,16 @@
         }
       };
       adminDiv.appendChild(deleteBtn);
+
+      // باركود للمشرف فقط
+      const qrDiv = document.createElement("div");
+      qrDiv.style.position = "fixed";
+      qrDiv.style.bottom = "10px";
+      qrDiv.style.left = "10px";
+      qrDiv.innerHTML = `
+        <img src="img/frame.png" alt="QR Code" style="width: 110px;">
+      `;
+      document.body.appendChild(qrDiv);
     }
 
     socket.on("updatePlayers", (players) => {
@@ -83,8 +85,8 @@
         div.className = "card";
         div.innerHTML = `<strong>${player.name}</strong><br>💰 ${player.balance.toLocaleString()} ريال`;
 
+        // ✅ اللاعب الحالي (مشرف أو عادي)
         if (player.name === name) {
-          // ✅ اللاعب الحالي (سواء مشرف أو عادي) يظهر له أدوات اللعب
           const input = document.createElement("input");
           input.type = "number";
           input.placeholder = "المبلغ";
@@ -141,7 +143,7 @@
           div.appendChild(btn);
           myCard.appendChild(div);
         } else {
-          // ✅ باقي اللاعبين
+          // ✅ باقي اللاعبين + صلاحيات المشرف فقط
           if (isOwner) {
             const input = document.createElement("input");
             input.type = "number";
