@@ -26,6 +26,7 @@
     const roomInfo = document.getElementById("room-info");
     const myCard = document.getElementById("player-card");
     const others = document.getElementById("others");
+    const adminControls = document.getElementById("admin-controls");
 
     let canSend = true;
 
@@ -52,13 +53,11 @@
 
       myCard.innerHTML = "";
       others.innerHTML = "";
+      adminControls.innerHTML = "";
 
       roomInfo.innerText = `رمز الغرفة: ${roomCode} — أنت: ${name} ${isOwner ? "(مشرف)" : ""}`;
 
-      // عرض أدوات المشرف (مرة وحدة فقط)
       if (isOwner && !document.getElementById("deleteRoomBtn")) {
-        const adminDiv = document.getElementById("admin-controls");
-
         const deleteBtn = document.createElement("button");
         deleteBtn.id = "deleteRoomBtn";
         deleteBtn.textContent = "🚩 حذف الغرفة";
@@ -71,7 +70,7 @@
             location.href = "index.html";
           }
         };
-        adminDiv.appendChild(deleteBtn);
+        adminControls.appendChild(deleteBtn);
 
         const qrDiv = document.createElement("div");
         qrDiv.style.position = "fixed";
@@ -88,7 +87,8 @@
         div.className = "card";
         div.innerHTML = `<strong>${player.name}</strong><br>💰 ${player.balance.toLocaleString()} ريال`;
 
-        if (player.name === name) {
+        // ✅ إذا هذا اللاعب هو المستخدم الحالي (بالـ socket.id)
+        if (player.id === socket.id) {
           const input = document.createElement("input");
           input.type = "number";
           input.placeholder = "المبلغ";
