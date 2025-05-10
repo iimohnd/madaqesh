@@ -147,11 +147,13 @@
             btn.onclick = () => {
               const newBalance = Number(input.value);
               if (isNaN(newBalance)) return;
+
               socket.emit("manualUpdate", {
                 roomCode,
-                playerId: player.id,
+                playerName: player.name, // ✅ نستخدم الاسم بدل ID
                 newBalance,
               });
+
               input.value = "";
             };
 

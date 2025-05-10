@@ -20,7 +20,7 @@ io.on("connection", (socket) => {
   console.log("🔌 اتصال جديد:", socket.id);
 
   socket.on("createRoom", async (username, callback) => {
-    const { roomCode, roomData } = await createRoom(username, socket.id);
+    const { roomCode, roomData } = await createRoom(username);
 
     socket.join(roomCode);
     socket.roomCode = roomCode;
@@ -28,7 +28,7 @@ io.on("connection", (socket) => {
 
     io.to(roomCode).emit("updatePlayers", {
       players: roomData.players,
-      ownerName: username,
+      ownerName: roomData.ownerName,
     });
 
     callback(roomCode);
@@ -37,7 +37,7 @@ io.on("connection", (socket) => {
   socket.on("joinRoom", async ({ username, roomCode }, callback) => {
     console.log("🟨 يحاول دخول الغرفة:", roomCode);
 
-    const room = await joinRoom(roomCode, username, socket.id);
+    const room = await joinRoom(roomCode, username);
 
     if (!room) {
       console.log("❌ الغرفة غير موجودة");
@@ -78,14 +78,13 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("manualUpdate", async ({ roomCode, playerId, newBalance }) => {
+  socket.on("manualUpdate", async ({ roomCode, playerName, newBalance }) => {
     const room = await getRoom(roomCode);
     if (!room) return;
 
-    const isOwner = socket.username === room.ownerName;
-    if (!isOwner) return;
+    if (socket.username !== room.ownerName) return;
 
-    const player = room.players.find((p) => p.id === playerId);
+    const player = room.players.find((p) => p.name === playerName);
     if (player) {
       player.balance = newBalance;
 
