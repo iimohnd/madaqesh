@@ -5,15 +5,20 @@
   <title>غرفة مداقش</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
   <div class="container">
-    <div id="admin-controls" style="margin: 20px;"></div>
-
     <h1 class="title-small">مداقش</h1>
     <h2 id="room-info"></h2>
 
+    <!-- زر المشرف -->
+    <div id="admin-controls" style="margin: 10px 0;"></div>
+
+    <!-- بطاقة اللاعب -->
     <div id="player-card" class="card my-card"></div>
+
+    <!-- بطاقات اللاعبين الآخرين -->
     <div id="others"></div>
   </div>
 
@@ -23,24 +28,6 @@
     const name = sessionStorage.getItem("name");
     const roomCode = sessionStorage.getItem("roomCode");
     const isOwner = sessionStorage.getItem("isOwner") === "true";
-    
-    if (isOwner) {
-  const adminDiv = document.getElementById("admin-controls");
-  const deleteBtn = document.createElement("button");
-  deleteBtn.textContent = "🚩 حذف الغرفة";
-  deleteBtn.style.backgroundColor = "#dc2626";
-
-  deleteBtn.onclick = async () => {
-    const confirmDelete = confirm("هل أنت متأكد أنك تريد حذف الغرفة؟");
-    if (!confirmDelete) return;
-
-    socket.emit("deleteRoom", roomCode);
-    alert("تم حذف الغرفة ✅");
-    location.href = "index.html";
-  };
-
-  adminDiv.appendChild(deleteBtn);
-}
 
     const roomInfo = document.getElementById("room-info");
     const myCard = document.getElementById("player-card");
@@ -51,16 +38,37 @@
     // عرض معلومات المستخدم ورمز الغرفة
     roomInfo.innerText = `رمز الغرفة: ${roomCode} — أنت: ${name} ${isOwner ? "(مشرف)" : ""}`;
 
-    // فقط اللاعبين العاديين يرسلون joinRoom
+    // فقط غير المشرفين ينفذون joinRoom
     if (!isOwner) {
       socket.emit("joinRoom", { username: name, roomCode }, (res) => {
-        if (res?.error) {
-          alert("حدث خطأ في الدخول للغرفة.");
+        if (res?.error === "Room not found") {
+          alert("❌ الكود غير صحيح أو الغرفة غير موجودة.");
+          location.href = "index.html";
+        } else if (res?.error === "Duplicate name") {
+          alert("❌ هذا الاسم مستخدم بالفعل داخل الغرفة.");
           location.href = "index.html";
         }
       });
     }
 
+    // زر حذف الغرفة (للمشرف فقط)
+    if (isOwner) {
+      const adminDiv = document.getElementById("admin-controls");
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "🚩 حذف الغرفة";
+      deleteBtn.style.backgroundColor = "#dc2626";
+      deleteBtn.onclick = () => {
+        const sure = confirm("هل تريد حذف الغرفة نهائيًا؟");
+        if (sure) {
+          socket.emit("deleteRoom", roomCode);
+          alert("✅ تم حذف الغرفة.");
+          location.href = "index.html";
+        }
+      };
+      adminDiv.appendChild(deleteBtn);
+    }
+
+    // تحديث واجهة اللاعبين
     socket.on("updatePlayers", (players) => {
       myCard.innerHTML = "";
       others.innerHTML = "";
@@ -98,10 +106,15 @@
           btn.onclick = () => {
             const amount = Number(input.value);
             const action = document.querySelector("input[name='action']:checked");
-            if (!amount || !action) return alert("⚠️ الرجاء إدخال المبلغ وتحديد نوع العملية.");
-            const finalAmount = action.value === "lose" ? -amount : amount;
 
+            if (!amount || !action) {
+              alert("⚠️ الرجاء إدخال المبلغ وتحديد كسب أو خسارة.");
+              return;
+            }
+
+            const finalAmount = action.value === "lose" ? -amount : amount;
             socket.emit("updateBalance", { roomCode, amount: finalAmount });
+
             input.value = "";
             win.checked = false;
             lose.checked = false;
@@ -144,6 +157,7 @@
             div.appendChild(input);
             div.appendChild(btn);
           }
+
           others.appendChild(div);
         }
       });
