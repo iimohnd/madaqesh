@@ -1,6 +1,7 @@
 // rooms.js (Redis version)
 
 const { Redis } = require('@upstash/redis');
+
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
@@ -23,7 +24,9 @@ async function createRoom(username, socketId) {
     ],
     createdAt: Date.now(),
   };
-  await redis.set(roomCode, roomData);
+
+  // نحفظ الغرفة لمدة 12 ساعة فقط
+  await redis.set(roomCode, roomData, { ex: 60 * 60 * 12 });
   return { roomCode, roomData };
 }
 
@@ -41,7 +44,7 @@ async function joinRoom(roomCode, username, socketId) {
     balance: 10000,
   });
 
-  await redis.set(roomCode, room);
+  await redis.set(roomCode, room, { ex: 60 * 60 * 12 }); // جدد الوقت
   return room;
 }
 
@@ -61,7 +64,7 @@ async function removeRoomIfEmpty(socketId) {
     if (room.players.length === 0) {
       await redis.del(key);
     } else {
-      await redis.set(key, room);
+      await redis.set(key, room, { ex: 60 * 60 * 12 }); // جدد الوقت
     }
   }
 }

@@ -15,53 +15,47 @@ app.use(express.static(path.join(__dirname, "public")));
 io.on("connection", (socket) => {
   console.log("🔌 New connection", socket.id);
 
-  socket.on("createRoom", (username, callback) => {
-    const { roomCode, roomData } = createRoom(username, socket.id);
+  socket.on("createRoom", async (username, callback) => {
+    const { roomCode, roomData } = await createRoom(username, socket.id);
     socket.join(roomCode);
     io.to(roomCode).emit("updatePlayers", roomData.players);
     callback(roomCode);
   });
 
-  socket.on("joinRoom", ({ username, roomCode }, callback) => {
-    const room = getRoom(roomCode);
+  socket.on("joinRoom", async ({ username, roomCode }, callback) => {
+    const room = await joinRoom(roomCode, username, socket.id);
     if (!room) return callback({ error: "Room not found" });
-
-    const nameExists = room.players.some(p => p.name === username);
-    if (nameExists) return callback({ error: "Duplicate name" });
-
-    room.players.push({
-      id: socket.id,
-      name: username,
-      balance: 10000,
-    });
+    if (room.error === "Duplicate name") return callback({ error: "Duplicate name" });
     socket.join(roomCode);
     io.to(roomCode).emit("updatePlayers", room.players);
     callback({ success: true });
   });
 
-  socket.on("updateBalance", ({ roomCode, amount }) => {
-    const room = getRoom(roomCode);
+  socket.on("updateBalance", async ({ roomCode, amount }) => {
+    const room = await getRoom(roomCode);
     if (!room) return;
     const player = room.players.find((p) => p.id === socket.id);
     if (player) {
       player.balance += amount;
+      await redis.set(roomCode, room); // احفظ التحديث في Redis
       io.to(roomCode).emit("updatePlayers", room.players);
     }
   });
 
-  socket.on("manualUpdate", ({ roomCode, playerId, newBalance }) => {
-    const room = getRoom(roomCode);
+  socket.on("manualUpdate", async ({ roomCode, playerId, newBalance }) => {
+    const room = await getRoom(roomCode);
     if (!room) return;
     const player = room.players.find((p) => p.id === playerId);
     if (player && socket.id === room.ownerId) {
       player.balance = newBalance;
+      await redis.set(roomCode, room); // احفظ التحديث في Redis
       io.to(roomCode).emit("updatePlayers", room.players);
     }
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     console.log("❌ Disconnected", socket.id);
-    removeRoomIfEmpty(socket.id);
+    await removeRoomIfEmpty(socket.id);
   });
 });
 
@@ -69,3 +63,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
+socket.on("deleteRoom", async (roomCode) => {
+    await redis.del(roomCode);
+  });
+  

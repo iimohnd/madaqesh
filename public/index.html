@@ -5,24 +5,29 @@
   <title>مداقش</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
   <div class="container">
     <h1 class="title-big">مداقش</h1>
 
-    <div id="create-section">
-      <h2>إنشاء غرفة</h2>
-      <input type="text" id="create-name" placeholder="اسم اللاعب">
-      <button onclick="createRoom()">إنشاء</button>
-    </div>
+    <div style="max-width: 400px; margin: auto;">
+      <!-- إنشاء غرفة -->
+      <div id="create-section">
+        <h2>إنشاء غرفة</h2>
+        <input type="text" id="create-name" placeholder="اسم اللاعب">
+        <button onclick="createRoom()">إنشاء</button>
+      </div>
 
-    <hr>
+      <hr>
 
-    <div id="join-section">
-      <h2>دخول غرفة</h2>
-      <input type="text" id="join-name" placeholder="اسم اللاعب">
-      <input type="text" id="join-code" placeholder="كود الغرفة">
-      <button onclick="joinRoom()">دخول</button>
+      <!-- دخول غرفة -->
+      <div id="join-section">
+        <h2>دخول غرفة</h2>
+        <input type="text" id="join-name" placeholder="اسم اللاعب">
+        <input type="text" id="join-code" placeholder="كود الغرفة">
+        <button onclick="joinRoom()">دخول</button>
+      </div>
     </div>
   </div>
 

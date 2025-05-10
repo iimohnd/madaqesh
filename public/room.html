@@ -8,6 +8,8 @@
 </head>
 <body>
   <div class="container">
+    <div id="admin-controls" style="margin: 20px;"></div>
+
     <h1 class="title-small">مداقش</h1>
     <h2 id="room-info"></h2>
 
@@ -21,6 +23,24 @@
     const name = sessionStorage.getItem("name");
     const roomCode = sessionStorage.getItem("roomCode");
     const isOwner = sessionStorage.getItem("isOwner") === "true";
+    
+    if (isOwner) {
+  const adminDiv = document.getElementById("admin-controls");
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "🚩 حذف الغرفة";
+  deleteBtn.style.backgroundColor = "#dc2626";
+
+  deleteBtn.onclick = async () => {
+    const confirmDelete = confirm("هل أنت متأكد أنك تريد حذف الغرفة؟");
+    if (!confirmDelete) return;
+
+    socket.emit("deleteRoom", roomCode);
+    alert("تم حذف الغرفة ✅");
+    location.href = "index.html";
+  };
+
+  adminDiv.appendChild(deleteBtn);
+}
 
     const roomInfo = document.getElementById("room-info");
     const myCard = document.getElementById("player-card");
