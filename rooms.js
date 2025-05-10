@@ -1,10 +1,10 @@
-const Redis = require("ioredis");
+const { Redis } = require('@upstash/redis');
 
 const redis = new Redis({
-  host: "redis-14196.c328.europe-west3-1.gce.redns.redis-cloud.com",
-  port: 14196,
-  password: "qu0hwwkbQNqQXQRqmGxqkzRabYOuUwV2"
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
+
 
 console.log("🔐 Redis URL:", process.env.UPSTASH_REDIS_REST_URL);
 
