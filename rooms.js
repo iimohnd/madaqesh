@@ -64,7 +64,7 @@ async function getRoom(roomCode) {
   return typeof raw === "string" ? JSON.parse(raw) : raw;
 }
 
-// حذف الغرفة إذا أصبحت فارغة
+// تعديل: ما نحذف الغرفة حتى لو صارت فاضية
 async function removeRoomIfEmpty(socketId) {
   const keys = await redis.keys("*");
 
@@ -77,10 +77,8 @@ async function removeRoomIfEmpty(socketId) {
 
     room.players = room.players.filter((p) => p.id !== socketId);
 
-    if (room.players.length === 0) {
-      await redis.del(key);
-      console.log(`🗑️ Deleted empty room: ${key}`);
-    } else if (room.players.length < originalCount) {
+    if (room.players.length < originalCount) {
+      // ✅ نحفظ التحديث ولا نحذف الغرفة
       await redis.set(key, JSON.stringify(room), { ex: 60 * 60 * 12 });
       console.log(`📝 Updated room ${key}, removed player`);
     }
