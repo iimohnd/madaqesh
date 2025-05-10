@@ -33,7 +33,14 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
+   let deviceId = localStorage.getItem("deviceId");
+if (!deviceId) {
+  deviceId = crypto.randomUUID();
+  localStorage.setItem("deviceId", deviceId);
+}
+
+const socket = io();
+socket.emit("identify", { deviceId }); // نرسل المعرف بمجرد فتح الصفحة
 
     function createRoom() {
       const name = document.getElementById("create-name").value.trim();

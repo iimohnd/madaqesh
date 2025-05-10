@@ -2,13 +2,13 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
+const { createRoom, joinRoom, getRoom, removeRoomIfEmpty } = require("./rooms");
 
-const {
-  createRoom,
-  joinRoom,
-  getRoom,
-  removeRoomIfEmpty,
-} = require("./rooms");
+const { Redis } = require("@upstash/redis");
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -19,9 +19,14 @@ app.use(express.static(path.join(__dirname, "public")));
 io.on("connection", (socket) => {
   console.log("🔌 اتصال جديد:", socket.id);
 
+  // ننتظر تحديد الجهاز
+  socket.on("identify", ({ deviceId }) => {
+    socket.deviceId = deviceId;
+    console.log("🎯 هذا الجهاز:", deviceId);
+  });
+
   socket.on("createRoom", async (username, callback) => {
     const { roomCode, roomData } = await createRoom(username);
-
     socket.join(roomCode);
     socket.roomCode = roomCode;
     socket.username = username;
@@ -38,19 +43,15 @@ io.on("connection", (socket) => {
     console.log("🟨 يحاول دخول الغرفة:", roomCode);
 
     const room = await joinRoom(roomCode, username);
-
     if (!room) {
       console.log("❌ الغرفة غير موجودة");
       return callback({ error: "Room not found" });
     }
 
     if (room.error === "Duplicate name") {
-      return callback({ error: "Duplicate name" });
-    } else if (room.note === "Rejoin") {
-      // ✅ دخوله من جديد بنفس الاسم، نسمح له بس ما نضيفه مره ثانية
+      console.log("⚠️ دخول مكرر للاسم:", username);
       return callback({ success: true });
     }
-    
 
     socket.join(roomCode);
     socket.roomCode = roomCode;
@@ -71,8 +72,7 @@ io.on("connection", (socket) => {
     const player = room.players.find((p) => p.name === socket.username);
     if (player) {
       player.balance += amount;
-
-      await saveRoom(roomCode, room);
+      await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 4 });
 
       io.to(roomCode).emit("updatePlayers", {
         players: room.players,
@@ -90,8 +90,7 @@ io.on("connection", (socket) => {
     const player = room.players.find((p) => p.name === playerName);
     if (player) {
       player.balance = newBalance;
-
-      await saveRoom(roomCode, room);
+      await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 4 });
 
       io.to(roomCode).emit("updatePlayers", {
         players: room.players,
@@ -101,31 +100,15 @@ io.on("connection", (socket) => {
   });
 
   socket.on("deleteRoom", async (roomCode) => {
-    const { Redis } = require("@upstash/redis");
-    const redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    });
-
     await redis.del(roomCode);
     console.log("🚫 تم حذف الغرفة:", roomCode);
   });
 
   socket.on("disconnect", async () => {
     console.log("❌ تم فصل:", socket.id);
-    await removeRoomIfEmpty(socket.id);
+    await removeRoomIfEmpty(socket.id); // أو deviceId إذا حبيت تدعمه
   });
 });
-
-async function saveRoom(roomCode, data) {
-  const { Redis } = require("@upstash/redis");
-  const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-  });
-
-  await redis.set(roomCode, JSON.stringify(data), { ex: 60 * 60 * 12 });
-}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

@@ -5,19 +5,19 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-// توليد كود عشوائي للغرفة
+// 🔢 توليد كود الغرفة
 function generateRoomCode() {
-  return Math.floor(1000 + Math.random() * 9000).toString();
+  return Math.floor(1000 + Math.random() * 9000).toString(); // 4 أرقام
 }
 
-// إنشاء غرفة جديدة
+// ✅ إنشاء غرفة
 async function createRoom(username) {
   const roomCode = generateRoomCode();
   const roomData = {
     ownerName: username,
     players: [
       {
-        id: username, // 👈 المعرف هو الاسم
+        id: username, // نستخدم الاسم كمعرف ثابت
         name: username,
         balance: 10000,
       },
@@ -31,24 +31,16 @@ async function createRoom(username) {
   return { roomCode, roomData };
 }
 
-// دخول غرفة موجودة
+// ✅ دخول غرفة
 async function joinRoom(roomCode, username) {
-  console.log("🟨 Trying to join room:", roomCode);
-
   const raw = await redis.get(roomCode);
-  if (!raw) return null;
-
   const room = typeof raw === "string" ? JSON.parse(raw) : raw;
 
-  console.log("🔎 Room found:", room);
+  if (!room) return null;
 
-  if (!room || !room.players) return null;
-
+  // إذا الاسم موجود فعلاً، نسمح له يرجع بدون تكرار
   const nameExists = room.players.some((p) => p.name === username);
-  if (nameExists) {
-    return { success: true, note: "Rejoin" }; // 👈 نسمح له يرجع
-  }
-  
+  if (nameExists) return { error: "Duplicate name" };
 
   room.players.push({
     id: username,
@@ -57,31 +49,32 @@ async function joinRoom(roomCode, username) {
   });
 
   await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 4 });
-
   return room;
 }
 
-// جلب بيانات الغرفة
+// ✅ الحصول على بيانات الغرفة
 async function getRoom(roomCode) {
   const raw = await redis.get(roomCode);
   return typeof raw === "string" ? JSON.parse(raw) : raw;
 }
 
-// تحديث اللاعبين عند فصل الاتصال
-async function removeRoomIfEmpty(socketId) {
+// ✅ حذف لاعب من الغرفة (عند الفصل)
+async function removeRoomIfEmpty(socketIdOrName) {
   const keys = await redis.keys("*");
 
   for (const key of keys) {
     const raw = await redis.get(key);
     const room = typeof raw === "string" ? JSON.parse(raw) : raw;
-    if (!room || !room.players) continue;
+    if (!room) continue;
 
     const originalCount = room.players.length;
+    room.players = room.players.filter((p) => p.id !== socketIdOrName);
 
-    // ما نحذف اللاعبين بناءً على socket.id لأننا الآن نستخدم name فقط
-    // وبالتالي نقدر نتجاهل هذا أو نربطه بـ اسم المستخدم لاحقًا لو احتجنا
-    if (room.players.length < originalCount) {
-      await redis.set(key, JSON.stringify(room), { ex: 60 * 10 });
+    if (room.players.length === 0) {
+      await redis.del(key);
+      console.log(`🗑️ Deleted empty room: ${key}`);
+    } else if (room.players.length < originalCount) {
+      await redis.set(key, JSON.stringify(room), { ex: 60 * 60 * 4 });
       console.log(`📝 Updated room ${key}, removed player`);
     }
   }
