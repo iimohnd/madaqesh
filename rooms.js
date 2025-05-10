@@ -5,16 +5,14 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-// توليد كود عشوائي للغرفة
 function generateRoomCode() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
-// إنشاء غرفة جديدة
 async function createRoom(username, socketId) {
   const roomCode = generateRoomCode();
   const roomData = {
-    ownerId: socketId,
+    ownerName: username,
     players: [
       {
         id: socketId,
@@ -25,13 +23,12 @@ async function createRoom(username, socketId) {
     createdAt: Date.now(),
   };
 
-  await redis.set(roomCode, JSON.stringify(roomData), { ex: 60 * 60 * 6 });
+  await redis.set(roomCode, JSON.stringify(roomData), { ex: 60 * 60 * 4 });
   console.log("✅ Created Room Code:", roomCode);
 
   return { roomCode, roomData };
 }
 
-// دخول غرفة موجودة
 async function joinRoom(roomCode, username, socketId) {
   console.log("🟨 Trying to join room:", roomCode);
 
@@ -53,18 +50,17 @@ async function joinRoom(roomCode, username, socketId) {
     balance: 10000,
   });
 
-  await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 12 });
+  await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 4 });
 
   return room;
 }
 
-// جلب بيانات الغرفة
 async function getRoom(roomCode) {
   const raw = await redis.get(roomCode);
   return typeof raw === "string" ? JSON.parse(raw) : raw;
 }
 
-// تعديل: ما نحذف الغرفة حتى لو صارت فاضية
+// ⚠️ لا نحذف الغرف نهائيًا فورًا حتى لو فاضية
 async function removeRoomIfEmpty(socketId) {
   const keys = await redis.keys("*");
 
@@ -78,8 +74,7 @@ async function removeRoomIfEmpty(socketId) {
     room.players = room.players.filter((p) => p.id !== socketId);
 
     if (room.players.length < originalCount) {
-      // ✅ نحفظ التحديث ولا نحذف الغرفة
-      await redis.set(key, JSON.stringify(room), { ex: 60 * 60 * 12 });
+      await redis.set(key, JSON.stringify(room), { ex: 60 * 10 });
       console.log(`📝 Updated room ${key}, removed player`);
     }
   }

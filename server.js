@@ -19,22 +19,21 @@ app.use(express.static(path.join(__dirname, "public")));
 io.on("connection", (socket) => {
   console.log("🔌 اتصال جديد:", socket.id);
 
-  // إنشاء غرفة
   socket.on("createRoom", async (username, callback) => {
     const { roomCode, roomData } = await createRoom(username, socket.id);
 
     socket.join(roomCode);
     socket.roomCode = roomCode;
+    socket.username = username;
 
     io.to(roomCode).emit("updatePlayers", {
       players: roomData.players,
-      ownerId: roomData.ownerId,
+      ownerName: username,
     });
 
     callback(roomCode);
   });
 
-  // دخول غرفة
   socket.on("joinRoom", async ({ username, roomCode }, callback) => {
     console.log("🟨 يحاول دخول الغرفة:", roomCode);
 
@@ -52,21 +51,21 @@ io.on("connection", (socket) => {
 
     socket.join(roomCode);
     socket.roomCode = roomCode;
+    socket.username = username;
 
     io.to(roomCode).emit("updatePlayers", {
       players: room.players,
-      ownerId: room.ownerId,
+      ownerName: room.ownerName,
     });
 
     callback({ success: true });
   });
 
-  // تحديث الرصيد
   socket.on("updateBalance", async ({ roomCode, amount }) => {
     const room = await getRoom(roomCode);
     if (!room) return;
 
-    const player = room.players.find((p) => p.id === socket.id);
+    const player = room.players.find((p) => p.name === socket.username);
     if (player) {
       player.balance += amount;
 
@@ -74,17 +73,17 @@ io.on("connection", (socket) => {
 
       io.to(roomCode).emit("updatePlayers", {
         players: room.players,
-        ownerId: room.ownerId,
+        ownerName: room.ownerName,
       });
     }
   });
 
-  // تعديل الرصيد يدويًا (للمشرف)
   socket.on("manualUpdate", async ({ roomCode, playerId, newBalance }) => {
     const room = await getRoom(roomCode);
     if (!room) return;
 
-    if (socket.id !== room.ownerId) return;
+    const isOwner = socket.username === room.ownerName;
+    if (!isOwner) return;
 
     const player = room.players.find((p) => p.id === playerId);
     if (player) {
@@ -94,12 +93,11 @@ io.on("connection", (socket) => {
 
       io.to(roomCode).emit("updatePlayers", {
         players: room.players,
-        ownerId: room.ownerId,
+        ownerName: room.ownerName,
       });
     }
   });
 
-  // حذف الغرفة
   socket.on("deleteRoom", async (roomCode) => {
     const { Redis } = require("@upstash/redis");
     const redis = new Redis({
@@ -111,7 +109,6 @@ io.on("connection", (socket) => {
     console.log("🚫 تم حذف الغرفة:", roomCode);
   });
 
-  // عند فصل الاتصال
   socket.on("disconnect", async () => {
     console.log("❌ تم فصل:", socket.id);
     await removeRoomIfEmpty(socket.id);

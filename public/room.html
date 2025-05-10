@@ -23,17 +23,6 @@
     const name = sessionStorage.getItem("name");
     const roomCode = sessionStorage.getItem("roomCode");
 
-    let mySocketId = "";
-    let pendingPlayersData = null;
-
-    socket.on("connect", () => {
-      mySocketId = socket.id;
-      if (pendingPlayersData) {
-        renderPlayers(pendingPlayersData);
-        pendingPlayersData = null;
-      }
-    });
-
     const roomInfo = document.getElementById("room-info");
     const myCard = document.getElementById("player-card");
     const others = document.getElementById("others");
@@ -58,17 +47,9 @@
     }
 
     socket.on("updatePlayers", (data) => {
-      if (!mySocketId) {
-        pendingPlayersData = data;
-        return;
-      }
-      renderPlayers(data);
-    });
-
-    function renderPlayers(data) {
       const players = data.players;
-      const ownerId = data.ownerId;
-      const isOwner = mySocketId === ownerId;
+      const ownerName = data.ownerName;
+      const isOwner = name === ownerName;
 
       myCard.innerHTML = "";
       others.innerHTML = "";
@@ -90,15 +71,6 @@
           }
         };
         adminControls.appendChild(deleteBtn);
-
-        const qrDiv = document.createElement("div");
-        qrDiv.style.position = "fixed";
-        qrDiv.style.bottom = "10px";
-        qrDiv.style.left = "10px";
-        qrDiv.innerHTML = `
-          <img src="img/frame.png" alt="QR Code" style="width: 110px;">
-        `;
-        document.body.appendChild(qrDiv);
       }
 
       players.forEach(player => {
@@ -106,7 +78,8 @@
         div.className = "card";
         div.innerHTML = `<strong>${player.name}</strong><br>💰 ${player.balance.toLocaleString()} ريال`;
 
-        if (player.id === mySocketId) {
+        if (player.name === name) {
+          // أدوات اللعب الخاصة بك
           const input = document.createElement("input");
           input.type = "number";
           input.placeholder = "المبلغ";
@@ -163,6 +136,7 @@
           div.appendChild(btn);
           myCard.appendChild(div);
         } else {
+          // أدوات تعديل المشرف
           if (isOwner) {
             const input = document.createElement("input");
             input.type = "number";
@@ -189,7 +163,7 @@
           others.appendChild(div);
         }
       });
-    }
+    });
   </script>
 </body>
 </html>
