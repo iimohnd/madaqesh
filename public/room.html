@@ -24,9 +24,14 @@
     const roomCode = sessionStorage.getItem("roomCode");
 
     let mySocketId = "";
+    let pendingPlayersData = null;
 
     socket.on("connect", () => {
       mySocketId = socket.id;
+      if (pendingPlayersData) {
+        renderPlayers(pendingPlayersData);
+        pendingPlayersData = null;
+      }
     });
 
     const roomInfo = document.getElementById("room-info");
@@ -53,6 +58,14 @@
     }
 
     socket.on("updatePlayers", (data) => {
+      if (!mySocketId) {
+        pendingPlayersData = data;
+        return;
+      }
+      renderPlayers(data);
+    });
+
+    function renderPlayers(data) {
       const players = data.players;
       const ownerId = data.ownerId;
       const isOwner = mySocketId === ownerId;
@@ -176,7 +189,7 @@
           others.appendChild(div);
         }
       });
-    });
+    }
   </script>
 </body>
 </html>
