@@ -45,9 +45,12 @@ io.on("connection", (socket) => {
     }
 
     if (room.error === "Duplicate name") {
-      console.log("❌ اسم مكرر");
       return callback({ error: "Duplicate name" });
+    } else if (room.note === "Rejoin") {
+      // ✅ دخوله من جديد بنفس الاسم، نسمح له بس ما نضيفه مره ثانية
+      return callback({ success: true });
     }
+    
 
     socket.join(roomCode);
     socket.roomCode = roomCode;

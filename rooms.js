@@ -7,7 +7,7 @@ const redis = new Redis({
 
 // توليد كود عشوائي للغرفة
 function generateRoomCode() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
 // إنشاء غرفة جديدة
@@ -25,7 +25,7 @@ async function createRoom(username) {
     createdAt: Date.now(),
   };
 
-  await redis.set(roomCode, JSON.stringify(roomData), { ex: 60 * 60 * 12 });
+  await redis.set(roomCode, JSON.stringify(roomData), { ex: 60 * 60 * 4 });
   console.log("✅ Created Room Code:", roomCode);
 
   return { roomCode, roomData };
@@ -45,7 +45,10 @@ async function joinRoom(roomCode, username) {
   if (!room || !room.players) return null;
 
   const nameExists = room.players.some((p) => p.name === username);
-  if (nameExists) return { error: "Duplicate name" };
+  if (nameExists) {
+    return { success: true, note: "Rejoin" }; // 👈 نسمح له يرجع
+  }
+  
 
   room.players.push({
     id: username,
@@ -53,7 +56,7 @@ async function joinRoom(roomCode, username) {
     balance: 10000,
   });
 
-  await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 12 });
+  await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 4 });
 
   return room;
 }
@@ -78,7 +81,7 @@ async function removeRoomIfEmpty(socketId) {
     // ما نحذف اللاعبين بناءً على socket.id لأننا الآن نستخدم name فقط
     // وبالتالي نقدر نتجاهل هذا أو نربطه بـ اسم المستخدم لاحقًا لو احتجنا
     if (room.players.length < originalCount) {
-      await redis.set(key, JSON.stringify(room), { ex: 60 * 60 * 12 });
+      await redis.set(key, JSON.stringify(room), { ex: 60 * 10 });
       console.log(`📝 Updated room ${key}, removed player`);
     }
   }
