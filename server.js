@@ -28,8 +28,11 @@ io.on("connection", (socket) => {
   socket.on("createRoom", async (username, callback) => {
     const { roomCode, roomData } = await createRoom(username, socket.id);
     socket.join(roomCode);
-    socket.roomCode = roomCode; // نحتفظ بالكود داخل الجلسة
-    io.to(roomCode).emit("updatePlayers", roomData.players);
+    socket.roomCode = roomCode;
+    io.to(roomCode).emit("updatePlayers", {
+      players: roomData.players,
+      ownerId: roomData.ownerId,
+    });
     callback(roomCode);
   });
 
@@ -43,7 +46,10 @@ io.on("connection", (socket) => {
 
     socket.join(roomCode);
     socket.roomCode = roomCode;
-    io.to(roomCode).emit("updatePlayers", room.players);
+    io.to(roomCode).emit("updatePlayers", {
+      players: room.players,
+      ownerId: room.ownerId,
+    });
     callback({ success: true });
   });
 
@@ -55,7 +61,10 @@ io.on("connection", (socket) => {
     if (player) {
       player.balance += amount;
       await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 12 });
-      io.to(roomCode).emit("updatePlayers", room.players);
+      io.to(roomCode).emit("updatePlayers", {
+        players: room.players,
+        ownerId: room.ownerId,
+      });
     }
   });
 
@@ -67,7 +76,10 @@ io.on("connection", (socket) => {
     if (player && socket.id === room.ownerId) {
       player.balance = newBalance;
       await redis.set(roomCode, JSON.stringify(room), { ex: 60 * 60 * 12 });
-      io.to(roomCode).emit("updatePlayers", room.players);
+      io.to(roomCode).emit("updatePlayers", {
+        players: room.players,
+        ownerId: room.ownerId,
+      });
     }
   });
 
