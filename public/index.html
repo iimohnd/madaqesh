@@ -25,7 +25,7 @@
       <div id="join-section">
         <h2>دخول غرفة</h2>
         <input type="text" id="join-name" placeholder="اسم اللاعب">
-        <input type="text" id="join-code" placeholder="كود الغرفة">
+        <input type="text" id="join-code" placeholder="رمز الغرفة">
         <button onclick="joinRoom()">دخول</button>
       </div>
     </div>
@@ -36,34 +36,39 @@
     const socket = io();
 
     function createRoom() {
-      const name = document.getElementById('create-name').value.trim();
-      if (!name) return alert("⚠️ الرجاء إدخال اسمك.");
+      const name = document.getElementById("create-name").value.trim();
+
+      if (!name) {
+        alert("⚠️ الرجاء إدخال اسمك.");
+        return;
+      }
 
       socket.emit("createRoom", name, (roomCode) => {
-        sessionStorage.setItem("name", name);
-        sessionStorage.setItem("roomCode", roomCode);
-        sessionStorage.setItem("isOwner", "true");
-        location.href = "room.html";
+        localStorage.setItem("name", name);
+        localStorage.setItem("roomCode", roomCode);
+        window.location.href = "room.html";
       });
     }
 
     function joinRoom() {
-      const name = document.getElementById('join-name').value.trim();
-      const code = document.getElementById('join-code').value.trim();
+      const name = document.getElementById("join-name").value.trim();
+      const code = document.getElementById("join-code").value.trim();
 
-      if (!name || !code) return alert("⚠️ الرجاء إدخال جميع الحقول.");
+      if (!name || !code) {
+        alert("⚠️ الرجاء إدخال جميع الحقول.");
+        return;
+      }
 
       socket.emit("joinRoom", { username: name, roomCode: code }, (res) => {
-        if (res.error === "Room not found") {
-          return alert("❌ الكود غير صحيح، تأكد من إدخاله بشكل صحيح.");
+        if (res?.error === "Room not found") {
+          alert("❌ الكود غير صحيح أو الغرفة غير موجودة.");
+        } else if (res?.error === "Duplicate name") {
+          alert("❌ هذا الاسم مستخدم بالفعل داخل الغرفة.");
+        } else {
+          localStorage.setItem("name", name);
+          localStorage.setItem("roomCode", code);
+          window.location.href = "room.html";
         }
-        if (res.error === "Duplicate name") {
-          return alert("❌ هذا الاسم مستخدم بالفعل داخل الغرفة.");
-        }
-        sessionStorage.setItem("name", name);
-        sessionStorage.setItem("roomCode", code);
-        sessionStorage.setItem("isOwner", "false");
-        location.href = "room.html";
       });
     }
   </script>
